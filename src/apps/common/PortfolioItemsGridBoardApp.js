@@ -17,6 +17,7 @@
             };
 
             this.callParent([Ext.Object.merge(defaultConfig, config)]);
+
         },
 
         initComponent: function(){
@@ -197,7 +198,8 @@
             if (this.piTypePicker && this.piTypePicker.destroy) {
                 this.piTypePicker.destroy();
             }
-            var deferred = new Deft.Deferred();
+
+             var deferred = new Deft.Deferred();
             var piTypePickerConfig = {
                 preferenceName: this.getStateId('typepicker'),
                 fieldLabel: '', // delete this when removing PORTFOLIO_ITEM_TREE_GRID_PAGE_OPT_IN toggle. Can't delete these from PI Combobox right now or GUI tests fail in old PI page
@@ -217,14 +219,16 @@
             };
 
             if(!this.config.piTypePickerConfig.renderInGridHeader){
+
                 piTypePickerConfig.renderTo = Ext.query('#content .titlebar .dashboard-timebox-container')[0];
             }
 
             this.piTypePicker = Ext.create('Rally.ui.combobox.PortfolioItemTypeComboBox', piTypePickerConfig);
-
+            console.log('config', this.config.piTypePickerConfig.renderInGridHeader);
             if(this.config.piTypePickerConfig.renderInGridHeader){
+                console.log('render in gred header');
               this.on('gridboardadded', function() {
-                var headerContainer = this.gridboard.getHeader().getLeft();
+                var headerContainer = this.gridboard.getHeader().getRight();
                 headerContainer.add(this.piTypePicker);
               });
             }
