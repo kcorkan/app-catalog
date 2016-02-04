@@ -3,7 +3,7 @@
  * Requirements changed to only allow Preliminary Budget and Refined Estimate.
  */
 
-Ext.define('PortfolioItemCostTracking.NumberFieldComboBox', {
+Ext.define('Rally.apps.portfolioitemcosttracking.NumberFieldComboBox', {
     requires: [],
     extend: 'Rally.ui.combobox.FieldComboBox',
     alias: 'widget.numberfieldcombobox',

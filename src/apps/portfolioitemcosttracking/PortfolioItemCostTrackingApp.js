@@ -99,11 +99,11 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
             enableBulkEdit: true,
             allowExpansionStateToBeSaved: this.allowExpansionStateToBeSaved,
             enableInlineAdd: Rally.data.ModelTypes.areArtifacts(this.modelNames),
-            enableRanking: this._shouldEnableRanking(),
+            enableRanking: false,
             enableSummaryRow: Rally.data.ModelTypes.areArtifacts(this.modelNames),
             expandAllInColumnHeaderEnabled: true,
             plugins: this.getGridPlugins(),
-            stateId: this.getScopedStateId('grid2'),
+            stateId: this.getScopedStateId('cost-tracking-grid'),
             stateful: true,
             store: options && options.gridStore,
             storeConfig: {
@@ -122,7 +122,8 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
         if (this.rollupData){
             this.rollupData.destroy();
         }
-        this.rollupData = Ext.create('PortfolioItemCostTracking.RollupCalculator', {
+
+        this.rollupData = Ext.create('Rally.apps.portfolioitemcosttracking.RollupCalculator', {
             portfolioItemType: newType
         });
     },
@@ -173,7 +174,9 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
     },
     _showExportMenu: function () {
         var columnCfgs = this.down('rallytreegrid').columnCfgs,
-            additionalFields = _.filter(columnCfgs, function(c){ return (c.xtype === 'rallyfieldcolumn'); });
+            additionalFields = _.filter(columnCfgs, function(c){ return (c.xtype === 'rallyfieldcolumn'); }),
+            costFields = this.getDerivedColumns(),
+            columns = Ext.Array.merge(additionalFields, costFields);
 
         additionalFields = _.pluck(additionalFields, 'dataIndex');
 
@@ -181,9 +184,10 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
             fetch = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getTreeFetch(additionalFields),
             root_model = this.currentType.get('TypePath');
 
-        var exporter = new PortfolioItemCostTracking.Exporter();
+        var exporter = new Rally.apps.portfolioitemcosttracking.Exporter();
+        exporter.on('statusupdate', this._showStatus, this);
 
-        exporter.fetchExportData(root_model,filters,fetch,columnCfgs).then({
+        exporter.fetchExportData(root_model,filters,fetch,columns).then({
             scope: this,
             success: function(csv){
                 var filename = Ext.String.format("export-{0}.csv",Ext.Date.format(new Date(),"Y-m-d-h-i-s"));
@@ -196,11 +200,13 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
     },
     _loadRollupData: function(records){
 
-        var loader = Ext.create('PortfolioItemCostTracking.RollupDataLoader',{
+        var loader = Ext.create('Rally.apps.portfolioitemcosttracking.RollupDataLoader',{
             context: this.getContext(),
-            rootRecords: records,
+            portfolioItemTypes: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemTypes(),
+            featureName: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getFeatureName(),
             listeners: {
                 rollupdataloaded: function(portfolioHash, stories){
+                    //onsole.log('rollupdataloaded', portfolioHash, stories);
                     this._processRollupData(portfolioHash,stories,records);
                 },
                 loaderror: this._handleLoadError,
@@ -208,7 +214,7 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
                 scope: this
             }
         });
-        loader.load(records);
+        loader.loadDescendants(records);
     },
     _handleLoadError: function(msg){
         Rally.ui.notify.Notifier.showError({message: msg});
@@ -249,11 +255,11 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
     _getTreeGridStore: function () {
 
         var fetch = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getTreeFetch([]);
-        console.log('fetch', fetch);
+
         return Ext.create('Rally.data.wsapi.TreeStoreBuilder').build(_.merge({
             autoLoad: false,
             childPageSizeEnabled: true,
-            context: this._getGridBoardContext().getDataContext(),
+            context: this.getContext().getDataContext(),
             enableHierarchy: true,
             fetch: _.union(['Workspace'], this.columnNames, fetch),
             models: _.clone(this.models),
@@ -285,23 +291,31 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
 
         return [{
             text: "Actual Cost To Date",
-            xtype: 'actualcosttemplatecolumn',
+            xtype: 'costtemplatecolumn', //'actualcosttemplatecolumn',
             dataIndex: '_rollupData',
+            costField: '_rollupDataActualCost',
+            sortable: false,
             tooltip: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getHeaderTooltip('_rollupDataActualCost')
         },{
             text: "Remaining Cost",
-            xtype: 'remainingcosttemplatecolumn',
+            xtype: 'costtemplatecolumn', //'remainingcosttemplatecolumn',
             dataIndex: '_rollupData',
+            sortable: false,
+            costField: '_rollupDataRemainingCost',
             tooltip: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getHeaderTooltip('_rollupDataRemainingCost')
         }, {
             text: 'Total Projected',
-            xtype: 'totalcosttemplatecolumn',
+            xtype: 'costtemplatecolumn', //'totalcosttemplatecolumn',
             dataIndex: '_rollupData',
+            sortable: false,
+            costField: '_rollupDataTotalCost',
             tooltip: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getHeaderTooltip('_rollupDataTotalCost')
         },{
             text: 'Preliminary Budget',
-            xtype: 'preliminarybudgettemplatecolumn',
+            xtype: 'costtemplatecolumn', //'preliminarybudgettemplatecolumn',
             dataIndex: '_rollupData',
+            sortable: false,
+            costField: '_rollupDataPreliminaryBudget',
             tooltip: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getHeaderTooltip('_rollupDataPreliminaryBudget')
         }];
     },
@@ -340,19 +354,19 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
     },
     fetchDoneStates: function(){
         var deferred = Ext.create('Deft.Deferred');
-        console.log('fetchDoneStates', new Date());
+
         Rally.data.ModelFactory.getModel({
             type: 'HierarchicalRequirement',
             success: function(model) {
                 var field = model.getField('ScheduleState');
                 field.getAllowedValueStore().load({
                     callback: function(records, operation, success) {
-                        console.log('fetchDoneStates callback', new Date());
+
                         if (success){
                             var values = [];
                             for (var i=records.length - 1; i > 0; i--){
                                 values.push(records[i].get('StringValue'));
-                                if (records[i].get('StringValue') == "Accepted"){
+                                if (records[i].get('StringValue') === "Accepted"){
                                     i = 0;
                                 }
                             }

@@ -1,9 +1,11 @@
-Ext.define('PortfolioItemCostTracking.Exporter',{
+Ext.define('Rally.apps.portfolioitemcosttracking.Exporter',{
 
     mixins: {
         observable: 'Ext.util.Observable'
     },
-
+    constructor: function (config) {
+        this.mixins.observable.constructor.call(this, config);
+    },
     saveCSVToFile:function(csv,file_name,type_object){
         if (type_object === undefined){
             type_object = {type:'text/csv;charset=utf-8'};
@@ -26,7 +28,7 @@ Ext.define('PortfolioItemCostTracking.Exporter',{
                         window.WebKitBlobBuilder ||
                     window.MozBlobBuilder ||
                     window.MSBlobBuilder;
-            if (window.BlobBuilder && e.name == 'TypeError'){
+            if (window.BlobBuilder && e.name === 'TypeError'){
                 bb = new BlobBuilder();
                 bb.append([textToWrite]);
                 textFileAsBlob = bb.getBlob("text/plain");
@@ -90,42 +92,37 @@ Ext.define('PortfolioItemCostTracking.Exporter',{
         var rootFetch = Ext.Array.merge(fetch, Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemFetch());
         var me = this;
 
-        this.fetchWsapiRecords(rootModel, rootFilters || [], rootFetch).then({
-            scope: this,
-            success: function(records){
-                    console.log('records',records, fetch);
-                  var loader = Ext.create('PortfolioItemCostTracking.RollupDataLoader',{
-                    rootRecords: records,
-                    additionalFetch: fetch,
-                    listeners: {
-                        rollupdataloaded: function(portfolioHash, stories){
-                            var rollupData = Ext.create('PortfolioItemCostTracking.RollupCalculator', {});
 
-                            portfolioHash[records[0].get('_type').toLowerCase()] = records;
-                            rollupData.addRollupRecords(portfolioHash, stories);
-                            rollupData.updateModels(records);
+        var loader = Ext.create('Rally.apps.portfolioitemcosttracking.RollupDataLoader',{
+              portfolioItemTypes: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemTypes(),
+              featureName: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getFeatureName(),
+              listeners: {
+                rollupdataloaded: function(portfolioHash, stories){
+                    //onsole.log('rollupdataloaded', portfolioHash, stories);
+                    var rollupData = Ext.create('Rally.apps.portfolioitemcosttracking.RollupCalculator', {
+                        portfolioItemType: rootModel
+                    });
 
-                            var exportData = me._getExportableRollupData(records,columns, rollupData);
-                            columns = me._getAncestorTypeColumns(rootModel).concat(columns);
+                    rollupData.addRollupRecords(portfolioHash, stories);
+                    //onsole.log('models updateded', portfolioHash, stories);
+                    var exportData = me._getExportableRollupData(portfolioHash[rootModel.toLowerCase()],columns, rollupData);
+                    columns = me._getAncestorTypeColumns(rootModel).concat(columns);
 
-                            var csv = me._transformExportableRollupDataToDelimitedString(exportData, columns);
-                            deferred.resolve(csv);
-                        },
-                        loaderror: function(msg){
-                            deferred.reject(msg);
-                        },
-                        statusupdate: function(status){
-                            this.fireEvent('statusupdate', status);
-                        },
-                        scope: this
-                    }
-                });
-                loader.load(records);
-            },
-            failure: function(msg){
-                deferred.reject(msg);
+                    var csv = me._transformExportableRollupDataToDelimitedString(exportData, columns);
+                    this.fireEvent('statusupdate', null);
+                    deferred.resolve(csv);
+                },
+                loaderror: function(msg){
+                    deferred.reject(msg);
+                },
+                statusupdate: function(status){
+                    this.fireEvent('statusupdate', status);
+                },
+                scope: this
             }
         });
+        loader.loadTree({model: rootModel, fetch: rootFetch, filters: rootFilters || []});
+
         return deferred;
     },
     _transformExportableRollupDataToDelimitedString: function(rollupData, columns){
@@ -225,7 +222,7 @@ Ext.define('PortfolioItemCostTracking.Exporter',{
     fetchWsapiRecords: function(model, query_filters, fetch_fields, context){
         var deferred = Ext.create('Deft.Deferred');
 
-        var store = Ext.create('Rally.data.wsapi.Store',{
+        Ext.create('Rally.data.wsapi.Store',{
             model: model,
             fetch: fetch_fields,
             filters: query_filters,

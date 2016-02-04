@@ -14,6 +14,7 @@ Ext.override(Rally.ui.grid.TreeGrid, {
         return mergedColumns;
     },
     _getPersistableColumnConfig: function(column) {
+
         var columnConfig = this._getColumnConfigFromColumn(column),
             field = this._getModelField(columnConfig.dataIndex);
 
@@ -21,28 +22,5 @@ Ext.override(Rally.ui.grid.TreeGrid, {
             columnConfig.dataIndex = field.getUUID();
         }
         return columnConfig;
-    },
-    reconfigureWithColumns: function(columnCfgs, reconfigureExistingColumns, suspendLoad) {
-        console.log('reconfigureWithColumns', columnCfgs);
-        columnCfgs = this._getStatefulColumns(columnCfgs);
-        console.log('reconfigureWithColumns 2' , columnCfgs);
-
-        if (!reconfigureExistingColumns) {
-            columnCfgs = this._mergeColumnConfigs(columnCfgs, this.columns);
-        }
-        console.log('reconfigureWithColumns 3' , columnCfgs);
-        this.columnCfgs = columnCfgs;
-        this._buildColumns(true);
-        this.getStore().fetch = this._buildFetch();
-
-        this.on('reconfigure', function() {
-            this.headerCt.setSortState();
-        }, this, {single: true});
-        this.reconfigure(null, this.columns);
-        this.columns = this.headerCt.items.getRange();
-        console.log('reconfigureWithColumns 4' , this.columns);
-        if (!suspendLoad) {
-            this.getStore().load();
-        }
     }
 });

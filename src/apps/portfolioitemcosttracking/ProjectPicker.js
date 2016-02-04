@@ -1,6 +1,6 @@
 
 
-Ext.define('ProjectPickerDialog', {
+Ext.define('Rally.apps.portfolioitemcosttracking.ProjectPickerDialog', {
     extend: 'Rally.ui.dialog.Dialog',
     alias: 'widget.projectpickerdialog',
 
@@ -221,12 +221,8 @@ Ext.define('ProjectPickerDialog', {
     getStoreFilters: function() {
         return [];
     },
-
-    buildGrid: function() {
-        if (this.grid) {
-            this.grid.destroy();
-        }
-        Ext.create('Rally.data.wsapi.ProjectTreeStoreBuilder').build({
+    _buildTreeStore: function(){
+        return Ext.create('Rally.data.wsapi.ProjectTreeStoreBuilder').build({
             models: ['project'],
             autoLoad: true,
             enableHierarchy: true,
@@ -234,10 +230,15 @@ Ext.define('ProjectPickerDialog', {
                 property: 'Parent',
                 value: ""
             }]
-        }).then({
-            scope: this,
-            success: function(store) {
+        });
+    },
+    buildGrid: function() {
+        if (this.grid) {
+            this.grid.destroy();
+        }
 
+        this._buildTreeStore().then({
+            success: function(store){
                 var mode = this.multiple ? 'MULTI' : 'SINGLE';
 
                 var checkbox_model = Ext.create('Rally.ui.selection.CheckboxModel', {
@@ -257,7 +258,7 @@ Ext.define('ProjectPickerDialog', {
                     enableEditing: false,
                     enableBulkEdit: false,
                     shouldShowRowActionsColumn: false,
-
+                    showRowActionsColumn: false,
                     selModel: checkbox_model,
                     _defaultTreeColumnRenderer: function (value, metaData, record, rowIdx, colIdx, store) {
                         store = store.treeStore || store;
@@ -275,8 +276,11 @@ Ext.define('ProjectPickerDialog', {
                 });
                 this.add(this.grid);
                 this._onGridReady();
-            }
+            },
+            failure: function(msg){},
+            scope: this
         });
+
     },
 
     _enableDoneButton: function() {
@@ -325,7 +329,6 @@ Ext.define('ProjectPickerDialog', {
         this.center();
     },
     _onGridLoad: function() {
-        //console.log('_onGridLoad');
         var store = this.grid.store;
         var records = [];
         _.each(this.selectionCache, function(record) {
@@ -428,9 +431,7 @@ Ext.define('Rally.data.wsapi.ProjectTreeStore', {
     getParentFieldNamesByChildType: function(childType, parentType) {
         var model = this.model; //.getArtifactComponentModel(childType);
         return _.transform(this.mapper.getParentFields(childType, parentType), function(acc, field) {
-            var typePath = field.typePath,
-                fieldName = field.fieldName,
-            // hasFieldModel = this.model.getArtifactComponentModel(typePath) || model.hasField(fieldName);
+            var fieldName = field.fieldName,
                 hasFieldModel = model.hasField(fieldName);
 
             if (hasFieldModel) {

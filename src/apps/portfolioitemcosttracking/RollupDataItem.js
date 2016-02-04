@@ -1,4 +1,4 @@
-Ext.define('PortfolioItemCostTracking.PortfolioRollupItem',{
+Ext.define('Rally.apps.portfolioitemcosttracking.RollupItem',{
 
     _rollupDataPreliminaryBudget: undefined,
     _rollupDataTotalCost: undefined,
@@ -106,8 +106,8 @@ Ext.define('PortfolioItemCostTracking.PortfolioRollupItem',{
 });
 
 
-Ext.define('PortfolioItemCostTracking.UpperLevelPortfolioRollupItem',{
-    extend: 'PortfolioItemCostTracking.PortfolioRollupItem',
+Ext.define('Rally.apps.portfolioitemcosttracking.UpperLevelPortfolioRollupItem',{
+    extend: 'Rally.apps.portfolioitemcosttracking.RollupItem',
 
 
     processChildren: function(){
@@ -121,7 +121,8 @@ Ext.define('PortfolioItemCostTracking.UpperLevelPortfolioRollupItem',{
             rollupItems = this.children || [],
             notEstimated = false;
 
-        Ext.Array.each(rollupItems, function(item){
+        for (var i=0; i<rollupItems.length; i++){
+            var item = rollupItems[i];
             item.processChildren();
 
             rollupDataTotal += item.getTotalCostRollup() ;
@@ -131,8 +132,7 @@ Ext.define('PortfolioItemCostTracking.UpperLevelPortfolioRollupItem',{
             actualUnitsSum += item.__actualUnits || 0;
             projectCosts = Ext.merge(projectCosts, item.projectCosts || {});
             notEstimated = notEstimated && item._notEstimated;
-
-        }, this);
+        }
 
         this._notEstimated = notEstimated;
         this._rollupDataTotalCost = rollupDataTotal;
@@ -146,54 +146,82 @@ Ext.define('PortfolioItemCostTracking.UpperLevelPortfolioRollupItem',{
     }
 });
 
-Ext.define('PortfolioItemCostTracking.LowestLevelPortfolioRollupItem',{
-    extend: 'PortfolioItemCostTracking.PortfolioRollupItem',
+Ext.define('Rally.apps.portfolioitemcosttracking.LowestLevelPortfolioRollupItem',{
+    extend: 'Rally.apps.portfolioitemcosttracking.RollupItem',
 
     processChildren: function(){
-        if (!this.children || this.children.length ===0){
-            return;
-        }
 
-        var objectID = this.objectID,
-            rollupDataTotal = 0,
-            rollupDataActual = 0,
-            totalUnitsSum = 0,
-            actualUnitsSum = 0,
-            projectCosts = {};
+        this._rollupDataToolTip = this.getTooltip();
 
-        for (var i=0; i< this.children.length ; i++){
-            var childData = this.children[i];
-
-            if (childData.PortfolioItem && childData.PortfolioItem.ObjectID === objectID) {
-
-                var totalUnits = childData.__totalUnits, //totalFn(childData) || 0,
-                    actualUnits = childData.__actualUnits;  //actualFn(childData) || 0;
-
-                totalUnitsSum += totalUnits;
-                actualUnitsSum += actualUnits;
-                projectCosts = this._updateProjectNameAndCostHash(projectCosts, childData.Project);
-
-
-                rollupDataTotal += childData._rollupDataTotalCost;
-                rollupDataActual += childData._rollupDataActualCost;
-            }
-        }
-
-        this._notEstimated = (totalUnitsSum === 0);
         if (this._notEstimated && this.getPreliminaryBudget() > this.getActualCostRollup()){
             this._rollupDataRemainingCost = this.getPreliminaryBudget() - this.getActualCostRollup();
             this._rollupDataTotalCost = this._rollupDataActualCost + this._rollupDataRemainingCost;
         } else {
-            this._rollupDataTotalCost = rollupDataTotal;
-            this._rollupDataRemainingCost = rollupDataTotal  - rollupDataActual;
+            this._rollupDataRemainingCost = this._rollupDataTotalCost  - this._rollupDataActualCost;
         }
-        this.__totalUnits = totalUnitsSum;
-        this.__actualUnits = actualUnitsSum;
+        //if (!this.children || this.children.length ===0){
+        //    return;
+        //}
+        //
+        //var objectID = this.objectID,
+        //    rollupDataTotal = 0,
+        //    rollupDataActual = 0,
+        //    totalUnitsSum = 0,
+        //    actualUnitsSum = 0,
+        //    projectCosts = {};
+        //
+        //for (var i=0; i< this.children.length ; i++){
+        //    var childData = this.children[i];
+        //
+        //    if (childData.PortfolioItem && childData.PortfolioItem.ObjectID === objectID) {
+        //
+        //        var totalUnits = childData.__totalUnits, //totalFn(childData) || 0,
+        //            actualUnits = childData.__actualUnits;  //actualFn(childData) || 0;
+        //
+        //        totalUnitsSum += totalUnits;
+        //        actualUnitsSum += actualUnits;
+        //        projectCosts = this._updateProjectNameAndCostHash(projectCosts, childData.Project);
+        //
+        //
+        //        rollupDataTotal += childData._rollupDataTotalCost;
+        //        rollupDataActual += childData._rollupDataActualCost;
+        //    }
+        //}
+        //
+        //this._notEstimated = (totalUnitsSum === 0);
+        //if (this._notEstimated && this.getPreliminaryBudget() > this.getActualCostRollup()){
+        //    this._rollupDataRemainingCost = this.getPreliminaryBudget() - this.getActualCostRollup();
+        //    this._rollupDataTotalCost = this._rollupDataActualCost + this._rollupDataRemainingCost;
+        //} else {
+        //    this._rollupDataTotalCost = rollupDataTotal;
+        //    this._rollupDataRemainingCost = rollupDataTotal  - rollupDataActual;
+        //}
+        //this.__totalUnits = totalUnitsSum;
+        //this.__actualUnits = actualUnitsSum;
+        //
+        //this._rollupDataActualCost = rollupDataActual;
+        //this.projectCosts = projectCosts;
+        //this._rollupDataToolTip = this.getTooltip();
 
-        this._rollupDataActualCost = rollupDataActual;
-        this.projectCosts = projectCosts;
-        this._rollupDataToolTip = this.getTooltip();
+    },
+    addChild: function(child){
+        if (!this.children){
+            this.children = [];
+        }
+        this.children.push(child);
 
+        this.__totalUnits += child.__totalUnits || 0;
+        this.__actualUnits += child.__actualUnits || 0;
+
+        this._notEstimated = (this.__totalUnits === 0);
+
+        this._rollupDataActualCost += child._rollupDataActualCost;
+        this._rollupDataTotalCost += child._rollupDataTotalCost;
+        this._rollupDataRemainingCost = this._rollupDataTotalCost  - this._rollupDataActualCost;
+
+        if (!this.projectCosts || !this.projectCosts[child.Project._ref]){
+            this.projectCosts = this._updateProjectNameAndCostHash(this.projectCosts, child.Project);
+        }
     },
     _updateProjectNameAndCostHash: function(projectCosts, project){
 
@@ -210,10 +238,12 @@ Ext.define('PortfolioItemCostTracking.LowestLevelPortfolioRollupItem',{
     }
 });
 
-Ext.define('PortfolioItemCostTracking.UserStoryRollupItem', {
-    extend: 'PortfolioItemCostTracking.PortfolioRollupItem',
+Ext.define('Rally.apps.portfolioitemcosttracking.UserStoryRollupItem', {
+    extend: 'Rally.apps.portfolioitemcosttracking.RollupItem',
     constructor: function(record, totalFn, actualFn) {
+
         var data = record.getData();
+
         this.__totalUnits = totalFn(data);
         this.__actualUnits = actualFn(data);
         this._notEstimated = false;

@@ -1,7 +1,7 @@
 (function() {
     var Ext = window.Ext4 || window.Ext;
 
-    Ext.define('PortfolioItemCostTracking.RollupCalculator', {
+    Ext.define('Rally.apps.portfolioitemcosttracking.RollupCalculator', {
         extend: 'Ext.Base',
 
         mixins: {
@@ -17,14 +17,16 @@
         },
         addRollupRecords: function(portfolioItemRecordHash, stories){
             var portfolioItemTypes = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemTypes();
+
+            this.rootObjectIDs = [];
             for (var i=portfolioItemTypes.length -1; i >= 0; i--){
                 var portfolioRecords = portfolioItemRecordHash[portfolioItemTypes[i]] || [];
                 this._addPortfolioRecords(portfolioRecords);
             }
-            console.log('addRollupRecords._addStories', new Date());
+
             this._addStories(stories);
-             this._calculatePortfolioItemRollups();
-            console.log('addRollupRecords. DONE', new Date());
+            this._calculatePortfolioItemRollups();
+
         },
         getRollupData: function(record){
             if (!record){
@@ -43,18 +45,24 @@
             }
 
             var type = records[0].get('_type').toLowerCase(),
-                rollupItemType = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getRollupItemType(type);
+                rollupItemType = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getRollupItemType(type),
+                rootPortfolioItem = this.portfolioItemType.toLowerCase();
 
             if (rollupItemType){ //this is a portfolio item type
                 for (var i=0; i<records.length; i++){
                     var r = records[i],
+                        oid = r.get('ObjectID'),
                         parentObjectID = r.get('Parent') && r.get('Parent').ObjectID,
                         item = Ext.create(rollupItemType, r);
 
-                    this.rollupItems[r.get('ObjectID')] = item;
+                    this.rollupItems[oid] = item;
 
                     if (parentObjectID && this.rollupItems[parentObjectID]){
                         this.rollupItems[parentObjectID].addChild(item);
+                    }
+
+                    if (type === rootPortfolioItem){
+                        this.rootObjectIDs.push(oid);
                     }
                 }
             }
@@ -62,12 +70,12 @@
 
         _addStories: function(stories){
             var parents = [],
-                rollupItems = this.rollupItems,
+                //rollupItems = this.rollupItems,
                 totalFn = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getCalculationTypeSettings().totalUnitsForStoryFn,
                 actualFn = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getCalculationTypeSettings().actualUnitsForStoryFn;
 
             for(var i =0; i < stories.length; i++){
-                var item = Ext.create('PortfolioItemCostTracking.UserStoryRollupItem', stories[i], totalFn, actualFn);
+                var item = Ext.create('Rally.apps.portfolioitemcosttracking.UserStoryRollupItem', stories[i], totalFn, actualFn);
 
                 this.rollupItems[item.ObjectID] = item;
 
@@ -76,32 +84,39 @@
                     this.rollupItems[item.parent].addChild(item);
                 }
             }
-            _.each(parents, function(objectID){
-                if (rollupItems[objectID]){
-                    rollupItems[objectID].processChildren();
-                }
-            });
-            console.log('_addStories', this.rollupItems);
+
+            //for (var i=0; i<parents.length; i++){
+            //    var objectID = parents[i];
+            //    if (rollupItems[objectID]){
+            //        rollupItems[objectID].processChildren();
+            //    }
+            //}
+
         },
         _calculatePortfolioItemRollups: function(){
-           _.each(this.rollupItems, function(item){
-                if (item && item._type === this.portfolioItemType){
-                    item.processChildren();
-                }
-            });
+           for (var i=0; i<this.rootObjectIDs.length; i++){
+               var item = this.rollupItems[this.rootObjectIDs[i]];
+               if (item && item._type.toLowerCase() === this.portfolioItemType.toLowerCase()){
+                   item.processChildren();
+               }
+
+           }
         },
         updateModels: function(records){
             records = records || [];
             var unloadedModels = [],
                 rollupItems = this.rollupItems;
-            _.each(records, function(r){
-                var rollupItem = rollupItems[r.get('ObjectID')] || null;
+
+            for (var i=0; i<records.length; i++){
+                var r = records[i],
+                    rollupItem = rollupItems[r.get('ObjectID')] || null;
+
                 if (rollupItem){
                     r.set('_rollupData', rollupItem);
                 } else {
                     unloadedModels.push(r);
                 }
-            }, this);
+            }
             return unloadedModels;
         },
         destroy: function(){

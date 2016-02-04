@@ -106,6 +106,9 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettin
         {name: "Japanese Yen", value: "&#165;"},
         {name: "Brazilian Real", value: "R$"}
     ],
+    getFeatureName: function(){
+        return this.portfolioItemTypes[0].name.replace(/\s/g, '');
+    },
     getHeaderTooltip: function(field){
         var settings = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getCalculationTypeSettings();
         return settings.tooltips[field] || null;
@@ -148,10 +151,10 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettin
     getRollupItemType: function(type){
         var idx = _.indexOf(Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemTypes(), type.toLowerCase());
         if (idx > 0){
-            return 'PortfolioItemCostTracking.UpperLevelPortfolioRollupItem';
+            return 'Rally.apps.portfolioitemcosttracking.UpperLevelPortfolioRollupItem';
         }
         if (idx === 0){
-            return 'PortfolioItemCostTracking.LowestLevelPortfolioRollupItem';
+            return 'Rally.apps.portfolioitemcosttracking.LowestLevelPortfolioRollupItem';
         }
         return null;
     },

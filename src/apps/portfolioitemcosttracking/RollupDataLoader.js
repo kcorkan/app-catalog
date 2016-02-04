@@ -1,163 +1,224 @@
 (function() {
     var Ext = window.Ext4 || window.Ext;
 
-    /**
-     * Class to load lots of data and update as status is made.
-     */
-    Ext.define('PortfolioItemCostTracking.RollupDataLoader', {
-        extend: 'Ext.Base',
+    ///**
+    // * Class to load lots of data and update as status is made.
+    // */
+    Ext.define('Rally.apps.portfolioitemcosttracking.RollupDataLoader',{
+
+        storyModelName: 'hierarchicalrequirement',
 
         mixins: {
             observable: 'Ext.util.Observable'
         },
 
-        context: undefined,
-        promise: undefined,
+        model: undefined,
+        filters: undefined,
+        fetch: undefined,
+
+        maxParallelCalls: 6,
+        maxListSize: 50,
 
         constructor: function (config) {
-            console.log('loader', this, config);
             this.mixins.observable.constructor.call(this, config);
-
-            this.context = config && config.context || null;
-
-            this.additionalFetch = config && config.additionalFetch || [];
+            this.portfolioItemTypes = config.portfolioItemTypes || [];
         },
-        load: function(rootRecords){
-
+        loadTree: function(config){
+            this.rootConfig = config;
+            this.additionalFetch = config.fetch;
+            this.load(config.model);
+        },
+        loadDescendants: function(rootRecords, additionalFetch){
+            this.rootRecords = rootRecords;
+            this.additionalFetch = additionalFetch || [];
             if (!rootRecords || rootRecords.length === 0){
+                this.fireEvent('loaderror', "No root records to load descendents for.");
                 return;
             }
-            this.rootRecords = rootRecords;
-
-            if (this._getPortfolioItemLevelsToFetch() > 0){
-
-                this._fetchPortfolioItems();
-            } else {
-                this._fetchStories();
-            }
+            var model = this.getChildPortfolioItemType(rootRecords[0].get('_type'));
+            this.load(model);
         },
-        _fetchStories: function(portfolioItemHash){
-            var me = this;
 
-            me.fireEvent('statusupdate',"Loading Stories");
-            var portfolioRootLevel = me._getPortfolioItemLevelsToFetch();
-            me.fetchWsapiRecordsWithPaging(me._getStoryConfig(portfolioRootLevel)).then({
+        load: function(model){
+
+            if (this.portfolioItemTypes.length === 0){
+                this.fireEvent('loaderror', "Portfolio Item Types not initialized.");
+                return;
+            }
+
+            this.storyFetch = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getStoryFetch(this.additionalFetch);
+            this.portfolioItemFetch = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemFetch(this.additionalFetch);
+
+            var idx = _.indexOf(this.portfolioItemTypes, model.toLowerCase());
+            var fns = [];
+
+            for (var i=idx; i>=0; i--){
+                fns.push(this.fetchPortfolioItems);
+            }
+            fns.push(this.fetchUserStories);
+            this.recordsHash = {};
+
+            Deft.Chain.pipeline(fns, this).then({
                 success: function(stories){
-                    me.fireEvent('statusupdate',"Processing data");
-                    //Setting a timeout here so that the processing data status update shows up
-                    setTimeout(function() {me.fireEvent('rollupdataloaded', portfolioItemHash || {}, stories);}, 50);
+                   this.fireEvent('rollupdataloaded', this.recordsHash, _.flatten(stories));
                 },
                 failure: function(msg){
-                    me.fireEvent('loaderror', 'Error fetching stories: ' + msg);
+                    this.fireEvent('loaderror', msg);
                 },
                 scope: this
             });
-
         },
+        fetchRoot: function(){
+            this.fireEvent('statusupdate', "Loading artifacts");
+            var config = this.rootConfig || {};
+            config.fetch = config.fetch.concat(this.getRequiredFetchFields(config.model));
 
-        _fetchPortfolioItems: function(){
-            var promises = [],
-                portfolioRootLevel = this._getPortfolioItemLevelsToFetch();
-
-            this.fireEvent('statusupdate',"Loading Portfolio Items");
-
-            for (var i = 0; i <= portfolioRootLevel; i++){
-                promises.push(this.fetchWsapiRecordsWithPaging(this._getPortfolioItemConfig(i, portfolioRootLevel)));
+            return this.fetchWsapiRecordsWithPaging(config);
+        },
+        getChildPortfolioItemType: function(type){
+            var idx = _.indexOf(this.portfolioItemTypes, type.toLowerCase());
+            if (idx > 0){
+                return this.portfolioItemTypes[idx-1];
             }
-
-            Deft.Promise.all(promises).then({
-                success: function(results){
-                    var recordHash = {};
-                    _.each(results, function(records){
-                        if (records && records.length > 0){
-                            recordHash[records[0].get('_type')] = records;
-                        }
-                    });
-                    this._fetchStories(recordHash);
-                },
-                failure: function(msg){
-                    this.fireEvent('loaderror', 'Error fetching portfolio items: ' + msg);
-                },
-                scope: this
-            });
-
+            return this.storyModelName;
         },
-        _getPortfolioItemLevelsToFetch: function(){
-            var type = this.rootRecords[0].get('_type'),
-                portfolioRootLevel = Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemTypeLevel(type);
-
-            return portfolioRootLevel;
-        },
-        _getStoryConfig: function(portfolioRootLevel){
-            console.log('storefetch', Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getStoryFetch(this.additionalFetch));
-           return {
-                model: 'hierarchicalrequirement',
-                fetch: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getStoryFetch(this.additionalFetch),
-                filters: this._buildFetchFilter(-1, portfolioRootLevel),
-               statusDisplayString: "Loading data for {0} User Stories",
-               completedStatusDisplayString: "Processing data"
-            };
-        },
-        _getPortfolioItemConfig: function(idx, portfolioRootLevel){
-
-            return {
-                model: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemTypes()[idx],
-                fetch: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getPortfolioItemFetch(this.additionalFetch),
-                filters: this._buildFetchFilter(idx, portfolioRootLevel),
-                statusDisplayString: "Loading data for {0} Portfolio Items"
-            };
-        },
-        _buildParentLevelString: function(idx, portfolioRootLevel){
-            console.log('_buildParentLevelString', idx, portfolioRootLevel);
-            var startIdx = idx,
-                parentStringArray = [];
-
-            if (idx < 0){
-                startIdx = 0;
-                parentStringArray.push("PortfolioItem");
+        fetchPortfolioItems: function(parentRecords){
+            parentRecords = parentRecords || this.rootRecords;
+            if (!parentRecords || parentRecords.length === 0){
+                return this.fetchRoot();
             }
+            parentRecords = _.flatten(parentRecords);
 
-            parentStringArray = parentStringArray.concat(_.range(startIdx, portfolioRootLevel).map(function(){ return 'Parent'; }));
-            parentStringArray.push("ObjectID");
-            return parentStringArray.join('.');
+            var parentType = parentRecords[0].get('_type');
+            this.recordsHash[parentType] = parentRecords;
+
+            var type = this.getChildPortfolioItemType(parentType),
+                fetch = this.portfolioItemFetch.concat(this.getRequiredFetchFields(type)),
+                chunks = this._getChunks(parentRecords, 'Children', 'Count');
+
+            return this.fetchChunks(type, fetch, chunks, "Parent.ObjectID", Ext.String.format("Please Wait... Loading Children for {0} Portfolio Items", parentRecords.length));
         },
-        _buildFetchFilter: function(idx, portfolioRootLevel){
-            var records = this.rootRecords,
-                parentLevelString = this._buildParentLevelString(idx, portfolioRootLevel),
-                filters = _.map(records, function(r){ return {property: parentLevelString, value: r.get('ObjectID')}; });
+        _getChunks: function(parentRecords, countField, countFieldAttribute){
+            var chunks = [],
+                childCount = 0,
+                maxListSize = this.maxListSize,
+                //childCountTarget = 200,
+                idx = 0;
 
-            return Rally.data.wsapi.Filter.or(filters);
-        },
-
-        fetchlookback: function(ancestorOids, fetchList, typeHierarchy){
-            var deferred = Ext.create('Deft.Deferred');
-
-            fetchList = fetchList.concat(['_ItemHierarchy','_TypeHierarchy']);
-            console.log('fetchlookback', ancestorOids, fetchList, typeHierarchy);
-            Ext.create('Rally.data.lookback.SnapshotStore', {
-                fetch: fetchList,
-                find: {
-                    _ItemHierarchy: {$in: ancestorOids},
-                    __At: "current",
-                    _TypeHierarchy: typeHierarchy
-                },
-                hydrate: ['_TypeHierarchy'],
-                limit: 'Infinity',
-                removeUnauthorizedSnapshots: true
-            }).load({
-                callback: function(records, operation, success){
-                    console.log('lookback', records, operation, success);
-                    deferred.resolve(records);
+            chunks[idx] = [];
+            _.each(parentRecords, function(r){
+                var count = r.get(countField);
+                if (countFieldAttribute && count){
+                    count = count[countFieldAttribute];
+                }
+                if (count > 0){
+                    if (chunks[idx].length >= maxListSize){ //childCount + count > childCountTarget ||
+                        idx++;
+                        chunks[idx] = [];
+                        childCount = 0;
+                    }
+                    childCount += count;
+                    chunks[idx].push(r.get('ObjectID'));
                 }
             });
+            return chunks;
+        },
+        fetchUserStories: function(parentRecords){
+            parentRecords = parentRecords || this.rootRecords;
+            if (!parentRecords || parentRecords.length === 0){
+                return this.fetchRoot();
+            }
+            parentRecords = _.flatten(parentRecords);
 
+            var parentType = parentRecords[0].get('_type');
+            this.recordsHash[parentType] = parentRecords;
+
+            var type = this.storyModelName,
+                fetch = this.storyFetch.concat(this.getRequiredFetchFields(type)),
+                chunks = this._getChunks(parentRecords, 'UserStories','Count'),
+                featureParentName = this.featureName + ".ObjectID";
+
+            return this.fetchChunks(type, fetch, chunks, featureParentName, Ext.String.format("Please Wait... Loading User Stories for {0} Portfolio Items", parentRecords.length));
+        },
+        fetchChunks: function(type, fetch, chunks, chunkProperty, statusString){
+
+            if (chunks && chunks.length > 0 && chunks[0].length===0){
+                return Promise.resolve([]);
+            }
+
+            this.fireEvent('statusupdate', statusString);
+
+            var promises = [];
+            _.each(chunks, function(c){
+                var filters = _.map(c, function(ids){ return {property: chunkProperty, value: ids }; }),
+                    config = {
+                        model: type,
+                        fetch: fetch,
+                        filters: Rally.data.wsapi.Filter.or(filters)
+                    };
+                promises.push(function(){ return this.fetchWsapiRecords(config); });
+            });
+
+            return this.throttle(promises, this.maxParallelCalls, this);
+        },
+        fetchWsapiRecords: function(config){
+            var deferred = Ext.create('Deft.Deferred');
+
+            Ext.create('Rally.data.wsapi.Store',{
+                model: config.model,
+                fetch: config.fetch,
+                filters: config.filters,
+                limit: 'Infinity'
+            }).load({
+                callback: function(records, operation){
+                    if (operation.wasSuccessful()){
+                        deferred.resolve(records);
+                    } else {
+                        deferred.reject('fetchWsapiRecords error: ' + operation.error.errors.join(','));
+                    }
+                },
+                scope: this
+            });
             return deferred;
         },
-        cancel: function(){
-            if ((this.promise && this.promise.getState() === 'pending')){
-                this.promise.cancel();
-                this.fireEvent('loadcancelled');
+        getRequiredFetchFields: function(type){
+
+            if (type.toLowerCase() === this.storyModelName){
+                return ['Parent','PortfolioItem','ObjectID'];
             }
+            return  ['Children', 'UserStories','Parent','ObjectID'];
+        },
+        throttle: function (fns, maxParallelCalls, scope) {
+
+            if (maxParallelCalls <= 0 || fns.length < maxParallelCalls){
+                return Deft.promise.Chain.parallel(fns, scope);
+            }
+
+
+            var parallelFns = [],
+                fnChunks = [],
+                idx = -1;
+
+            for (var i = 0; i < fns.length; i++) {
+                if (i % maxParallelCalls === 0) {
+                    idx++;
+                    fnChunks[idx] = [];
+                }
+                fnChunks[idx].push(fns[i]);
+            }
+
+            _.each(fnChunks, function (chunk) {
+                parallelFns.push(function () {
+                    return Deft.promise.Chain.parallel(chunk, scope);
+                });
+            });
+
+            return Deft.Promise.reduce(parallelFns, function(groupResults, fnGroup) {
+                return Deft.Promise.when(fnGroup.call(scope)).then(function(results) {
+                    groupResults = groupResults.concat(results || []);
+                    return groupResults;
+                });
+            }, []);
         },
         fetchWsapiCount: function(model, query_filters){
             var deferred = Ext.create('Deft.Deferred');
@@ -202,7 +263,7 @@
                         promises.push(function () {return me.loadStorePage(page, store);});
                     });
 
-                    PortfolioItemCostTracking.promise.ParallelThrottle.throttle(promises, 12, me).then({
+                    this.throttle(promises, 12, me).then({
                         success: function(results){
                             deferred.resolve(_.flatten(results));
                         },
@@ -235,5 +296,6 @@
 
             return deferred;
         }
+
     });
 })();

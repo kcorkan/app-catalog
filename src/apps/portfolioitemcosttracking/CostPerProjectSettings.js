@@ -1,4 +1,4 @@
-Ext.define('PortfolioItemCostTracking.CostPerProjectSettings',{
+Ext.define('Rally.apps.portfolioitemcosttracking.CostPerProjectSettings',{
     extend: 'Ext.form.field.Base',
     alias: 'widget.costperprojectsettings',
     fieldSubTpl: '<div id="{id}" class="settings-grid"></div>',
@@ -89,7 +89,7 @@ Ext.define('PortfolioItemCostTracking.CostPerProjectSettings',{
                 scope: this,
                 click: function(){
 
-                    Ext.create('ProjectPickerDialog',{
+                    Ext.create('Rally.apps.portfolioitemcosttracking.ProjectPickerDialog',{
                         autoShow: true,
                         maxHeight: 400,
                         maxWidth: 400,

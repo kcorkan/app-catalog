@@ -1,6 +1,6 @@
 
 
-Ext.define('Ext.CostTemplate', {
+Ext.define('Rally.apps.portfolioitemcosttracking.CostTemplate', {
     extend: 'Ext.grid.column.Template',
     alias: ['widget.costtemplatecolumn'],
 
@@ -44,34 +44,34 @@ Ext.define('Ext.CostTemplate', {
         return this.tpl.apply(data);
     }
 });
-
-/**
- * Extended the cost template column class for each specific type
- * becuase if I pass in a custom property (eg costField), it
- * gets lost when the columns refresh
- *
- */
-
-Ext.define('Ext.ActualCostTemplate',{
-    extend: 'Ext.CostTemplate',
-    alias: ['widget.actualcosttemplatecolumn'],
-    costField: '_rollupDataActualCost'
-});
-
-Ext.define('Ext.TotalCostTemplate',{
-    extend: 'Ext.CostTemplate',
-    alias: ['widget.totalcosttemplatecolumn'],
-    costField: '_rollupDataTotalCost'
-});
-
-Ext.define('Ext.RemainingCostTemplate',{
-    extend: 'Ext.CostTemplate',
-    alias: ['widget.remainingcosttemplatecolumn'],
-    costField: '_rollupDataRemainingCost'
-});
-
-Ext.define('Ext.PreliminaryBudgetTemplate',{
-    extend: 'Ext.CostTemplate',
-    alias: ['widget.preliminarybudgettemplatecolumn'],
-    costField: '_rollupDataPreliminaryBudget'
-});
+//
+///**
+// * Extended the cost template column class for each specific type
+// * becuase if I pass in a custom property (eg costField), it
+// * gets lost when the columns refresh
+// *
+// */
+//
+//Ext.define('Ext.ActualCostTemplate',{
+//    extend: 'Ext.CostTemplate',
+//    alias: ['widget.actualcosttemplatecolumn'],
+//    costField: '_rollupDataActualCost'
+//});
+//
+//Ext.define('Ext.TotalCostTemplate',{
+//    extend: 'Ext.CostTemplate',
+//    alias: ['widget.totalcosttemplatecolumn'],
+//    costField: '_rollupDataTotalCost'
+//});
+//
+//Ext.define('Ext.RemainingCostTemplate',{
+//    extend: 'Ext.CostTemplate',
+//    alias: ['widget.remainingcosttemplatecolumn'],
+//    costField: '_rollupDataRemainingCost'
+//});
+//
+//Ext.define('Ext.PreliminaryBudgetTemplate',{
+//    extend: 'Ext.CostTemplate',
+//    alias: ['widget.preliminarybudgettemplatecolumn'],
+//    costField: '_rollupDataPreliminaryBudget'
+//});
