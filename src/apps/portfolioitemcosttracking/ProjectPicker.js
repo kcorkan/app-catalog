@@ -461,7 +461,52 @@ Ext.define('Rally.data.wsapi.ProjectTreeStore', {
         if (!suppressEvent) {
             this.load();
         }
+    },
+
+    load: function(options) {
+        this.recordLoadBegin({description: 'tree store load', component: this.requester});
+
+        this._hasErrors = false;
+
+        this.on('beforeload', function(store, operation) {
+            delete operation.id;
+        }, this, { single: true });
+
+        options = this._configureLoad(options);
+        options.originalCallback = options.callback;
+        var deferred = Ext.create('Deft.Deferred'),
+            me = this;
+
+        options.callback = function (records, operation, success) {
+            me.dataLoaded = true;
+
+            if(me.isRootNode(options.node) && operation.resultSet && operation.resultSet.sums) {
+                me.setSums(operation.resultSet.sums);
+            }
+
+            if (me._pageIsEmpty(operation)) {
+                me._reloadEmptyPage(options).then({
+                    success: function (records) {
+                        me._resolveLoadingRecords(deferred, records, options, operation, success);
+                    },
+                    failure: function() {
+                        me._rejectLoadingRecord(deferred, options, operation);
+                    }
+                });
+            } else {
+                me._resolveLoadingRecords(deferred, records, options, operation, success);
+            }
+        };
+
+        if (this._isViewReady()) {
+            this._beforeInitialLoad(options);
+        }
+
+        this.callParent([options]);
+
+        return deferred.promise;
     }
+
 });
 
 Ext.define('Rally.data.wsapi.ProjectTreeStoreBuilder', {

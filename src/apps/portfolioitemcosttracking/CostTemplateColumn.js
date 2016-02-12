@@ -44,7 +44,7 @@ Ext.define('Rally.apps.portfolioitemcosttracking.CostTemplate', {
         return this.tpl.apply(data);
     }
 });
-//
+
 ///**
 // * Extended the cost template column class for each specific type
 // * becuase if I pass in a custom property (eg costField), it
@@ -52,8 +52,8 @@ Ext.define('Rally.apps.portfolioitemcosttracking.CostTemplate', {
 // *
 // */
 //
-//Ext.define('Ext.ActualCostTemplate',{
-//    extend: 'Ext.CostTemplate',
+//Ext.define('Rally.apps.portfolioitemcosttracking.ActualCostTemplate',{
+//    extend: 'Rally.apps.portfolioitemcosttracking.CostTemplate',
 //    alias: ['widget.actualcosttemplatecolumn'],
 //    costField: '_rollupDataActualCost'
 //});

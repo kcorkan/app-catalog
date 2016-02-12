@@ -103,7 +103,7 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
             enableSummaryRow: Rally.data.ModelTypes.areArtifacts(this.modelNames),
             expandAllInColumnHeaderEnabled: true,
             plugins: this.getGridPlugins(),
-            stateId: this.getScopedStateId('cost-tracking-grid'),
+            stateId: this.getScopedStateId('cost-tracking-grid-1'),
             stateful: true,
             store: options && options.gridStore,
             storeConfig: {

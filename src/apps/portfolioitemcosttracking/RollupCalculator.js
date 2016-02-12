@@ -110,7 +110,6 @@
             for (var i=0; i<records.length; i++){
                 var r = records[i],
                     rollupItem = rollupItems[r.get('ObjectID')] || null;
-
                 if (rollupItem){
                     r.set('_rollupData', rollupItem);
                 } else {
