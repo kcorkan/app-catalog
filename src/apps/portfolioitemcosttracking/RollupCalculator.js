@@ -84,15 +84,8 @@
                     this.rollupItems[item.parent].addChild(item);
                 }
             }
-
-            //for (var i=0; i<parents.length; i++){
-            //    var objectID = parents[i];
-            //    if (rollupItems[objectID]){
-            //        rollupItems[objectID].processChildren();
-            //    }
-            //}
-
         },
+
         _calculatePortfolioItemRollups: function(){
            for (var i=0; i<this.rootObjectIDs.length; i++){
                var item = this.rollupItems[this.rootObjectIDs[i]];

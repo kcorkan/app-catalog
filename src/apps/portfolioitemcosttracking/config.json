@@ -5,17 +5,17 @@
    "sdk": "x",
    "javascript": [
       "../common/PortfolioItemsGridBoardApp.js",
-      "PortfolioItemCostTrackingApp.js",
-      "Settings.js",
       "CostPerProjectSettings.js",
-      "RollupDataItem.js",
-      "RollupCalculator.js",
-      "overrides.js",
-      "RollupDataLoader.js",
-      "ProjectPicker.js",
       "CostTemplateColumn.js",
       "Exporter.js",
-      "NumberFieldComboBox.js"
+      "NumberFieldComboBox.js",
+      "PortfolioItemCostTrackingApp.js",
+      "ProjectPicker.js",
+      "RollupCalculator.js",
+      "RollupDataItem.js",
+      "RollupDataLoader.js",
+      "Settings.js",
+      "overrides.js"
    ],
    "css": [
       "PortfolioItemCostTrackingApp.css"

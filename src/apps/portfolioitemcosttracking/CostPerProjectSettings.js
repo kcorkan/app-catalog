@@ -20,7 +20,7 @@ Ext.define('Rally.apps.portfolioitemcosttracking.CostPerProjectSettings',{
         this.addEvents('ready');
 
         var store = Ext.create('Rally.data.wsapi.Store', {
-            model: 'Project',
+            model: Ext.identityFn('Project'),
             fetch: ['Name'],
             context: {
                 project: null
