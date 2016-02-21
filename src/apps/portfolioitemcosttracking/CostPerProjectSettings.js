@@ -31,7 +31,6 @@ Ext.define('Rally.apps.portfolioitemcosttracking.CostPerProjectSettings',{
             scope: this,
             callback: this._buildProjectGrid
         });
-
     },
 
     _buildProjectGrid: function(records, operation, success){

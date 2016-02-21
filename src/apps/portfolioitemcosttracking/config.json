@@ -1,6 +1,6 @@
 {
    "name": "Portfolio Item Cost Tracking",
-   "className": "Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp",
+   "className": "Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingApp",
    "server": "https://rally1.rallydev.com/",
    "sdk": "x",
    "javascript": [
@@ -8,13 +8,16 @@
       "CostPerProjectSettings.js",
       "CostTemplateColumn.js",
       "Exporter.js",
+      "RollupItem.js",
+      "LowestLevelPortfolioRollupItem.js",
       "NumberFieldComboBox.js",
       "PortfolioItemCostTrackingApp.js",
-      "ProjectPicker.js",
+      "PortfolioItemCostTrackingSettings.js",
+      "ProjectPickerDialog.js",
+      "UserStoryRollupItem.js",
+      "UpperLevelPortfolioRollupItem.js",
       "RollupCalculator.js",
-      "RollupDataItem.js",
       "RollupDataLoader.js",
-      "Settings.js",
       "overrides.js"
    ],
    "css": [

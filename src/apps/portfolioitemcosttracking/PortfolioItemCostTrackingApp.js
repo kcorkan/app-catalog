@@ -1,9 +1,8 @@
-Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp', {
+Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingApp', {
     extend: 'Rally.apps.common.PortfolioItemsGridBoardApp',
     printHeaderLabel: 'Portfolio Items',
     statePrefix: 'portfolio-tree',
 
-    //extend: 'Rally.app.App',
     componentCls: 'app',
 
     config: {
@@ -206,7 +205,6 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemsCostTrackingApp',
             featureName: Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.getFeatureName(),
             listeners: {
                 rollupdataloaded: function(portfolioHash, stories){
-                    //onsole.log('rollupdataloaded', portfolioHash, stories);
                     this._processRollupData(portfolioHash,stories,records);
                 },
                 loaderror: this._handleLoadError,

@@ -40,13 +40,13 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettin
                 _rollupDataPreliminaryBudget: 'The prelimary budget will be calculated by multiplying the value of the selected field by the Cost per Unit for the project of the portfolio item. <br/><br/> Note that for portfolio item types beyond the lowest level, this is calculated from the preliminary estimate of the portfolio item, not from the sum of the portfolio item children.  If the selected field value is null, then -- will be displayed.'
             },
             actualUnitsForStoryFn: function(data){
-                if (data.PlanEstimate && Ext.Array.contains(Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.completedScheduleStates, data.ScheduleState)) {
-                    return data.PlanEstimate || 0;
+                if (data && data.PlanEstimate && Ext.Array.contains(Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettings.completedScheduleStates, data.ScheduleState)) {
+                    return data && data.PlanEstimate || 0;
                 }
                 return 0;
             },
             totalUnitsForStoryFn: function(data){
-                return data.PlanEstimate || 0;
+                return data && data.PlanEstimate || 0;
             }
         },
         taskHours: {
@@ -64,13 +64,13 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettin
             },
             actualUnitsForStoryFn: function(data){ return data.TaskActualTotal || 0; },
             totalUnitsForStoryFn: function(data){
-                return (data.TaskActualTotal || 0) + (data.TaskRemainingTotal || 0);
+                return (data && data.TaskActualTotal || 0) + (data && data.TaskRemainingTotal || 0);
             },
             actualUnitsForTaskFn: function(data){
-                return data.Actuals || 0;
+                return data && data.Actuals || 0;
             },
             totalUnitsForTaskFn: function(data){
-                return (data.ToDo || 0) + (data.Actuals || 0);
+                return (data && data.ToDo || 0) + (data && data.Actuals || 0);
             }
         },
         timesheets: {
@@ -295,6 +295,7 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettin
             fieldLabel: 'Normalized Cost Per Unit',
             labelWidth: labelWidth,
             width: 200,
+            value: config.normalizedCostPerUnit,
             margin: '25 0 0 0'
         },{
             xtype: 'costperprojectsettings',

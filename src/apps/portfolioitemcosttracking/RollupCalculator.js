@@ -4,6 +4,13 @@
     Ext.define('Rally.apps.portfolioitemcosttracking.RollupCalculator', {
         extend: 'Ext.Base',
 
+        requires: [
+            'Rally.apps.portfolioitemcosttracking.RollupItem',
+            'Rally.apps.portfolioitemcosttracking.UserStoryRollupItem',
+            'Rally.apps.portfolioitemcosttracking.LowestLevelPortfolioRollupItem',
+            'Rally.apps.portfolioitemcosttracking.UpperLevelPortfolioRollupItem'
+        ],
+
         mixins: {
             observable: 'Ext.util.Observable'
         },
