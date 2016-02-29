@@ -104,7 +104,8 @@ Ext.define('Rally.apps.portfolioitemcosttracking.PortfolioItemCostTrackingSettin
         {name: "US Dollars", value: "$"},
         {name: "Euro", value: "&#128;"},
         {name: "Japanese Yen", value: "&#165;"},
-        {name: "Brazilian Real", value: "R$"}
+        {name: "Brazilian Real", value: "R$"},
+        {name: "South African Rand", value: "R"}
     ],
     getFeatureName: function(){
         return this.portfolioItemTypes[0].name.replace(/\s/g, '');
